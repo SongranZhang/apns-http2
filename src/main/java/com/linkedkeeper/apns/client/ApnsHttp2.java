@@ -39,6 +39,7 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = false;
     }
 
+
     public ApnsHttp2(final InputStream p12InputStream, final String password) throws SSLException {
         try {
             KeyStore keyStore = P12Utils.loadPCKS12KeyStore(p12InputStream, password);
@@ -51,11 +52,44 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = false;
     }
 
-    public ApnsPushNotificationResponse<ApnsHttp2PushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
+    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
     }
 
-    public Future<ApnsPushNotificationResponse<ApnsHttp2PushNotification>> pushMessageAsync(final String payload, final String token) throws ExecutionException {
+    /**
+     * Partially async, as it still need connection wait if doestn have connected before
+     *
+     * @param payload
+     * @param token
+     * @return
+     * @throws ExecutionException
+     */
+    public Future<ApnsPushNotificationResponse<ApnsPushNotification>> pushMessageAsync(final String payload, final String token) throws ExecutionException {
+        if (!this.apnsHttp2Client.isConnected()) {
+            try {
+                stablishConnection();
+            } catch (InterruptedException e) {
+                logger.error("pushMessageAsync error.");
+            }
+        }
+        final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
+        final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
 
+        return sendNotificationFuture;
     }
+
+    // todo withProxy
+
+    // todo productMode
+
+    // todo sandboxMode
+
+    // todo createProxyFactory
+
+    private void stablishConnection() throws InterruptedException {
+        final Future<Void> connectFuture = sandboxEnvironment ? this.apnsHttp2Client.connectSandBox() : this.apnsHttp2Client.connectProduction();
+        connectFuture.await();
+    }
+
+    // todo disconnect
 
 }

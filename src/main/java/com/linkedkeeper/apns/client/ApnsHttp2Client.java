@@ -2,6 +2,7 @@ package com.linkedkeeper.apns.client;
 
 import com.linkedkeeper.apns.data.ApnsPushNotification;
 import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
+import com.linkedkeeper.apns.exceptions.ClientNotConnectedException;
 import com.linkedkeeper.apns.proxy.ProxyHandlerFactory;
 import com.linkedkeeper.apns.utils.P12Utils;
 import io.netty.bootstrap.Bootstrap;
@@ -20,7 +21,7 @@ import io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBeh
 import io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
-import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +58,16 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
     private volatile ProxyHandlerFactory proxyHandlerFactory;
 
     private Long gracefulShutdownTimeoutMillis;
+
     private volatile ChannelPromise connectionReadyPromise;
     private volatile ChannelPromise reconnectionPromise;
+    private long reconnectDelaySeconds = ApnsHttp2Properties.INITIAL_RECONNECT_DELAY_SECONDS;
 
     private final Map<T, Promise<ApnsPushNotificationResponse<T>>> responsePromises = new IdentityHashMap<>();
 
     private ArrayList<String> identities;
+
+    private static final ClientNotConnectedException NOT_CONNECTED_EXCEPTION = new ClientNotConnectedException();
 
     public ApnsHttp2Client(final File p12File, final String password) throws IOException, KeyStoreException {
         this(p12File, password, null);
@@ -277,23 +282,159 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     // todo setConnectionTimerout
 
-    // todo connect
+    public Future<Void> connect(final String host) {
+        return this.connect(host, ApnsHttp2Properties.DEFAULT_APNS_PORT);
+    }
 
-    // todo connectSandBox
+    public Future<Void> connectSandBox() {
+        return this.connect(ApnsHttp2Properties.DEVELOPMENT_APNS_HOST, ApnsHttp2Properties.DEFAULT_APNS_PORT);
+    }
 
-    // todo connectProduction
+    public Future<Void> connectProduction() {
+        return this.connect(ApnsHttp2Properties.PRODUCTION_APNS_HOST, ApnsHttp2Properties.DEFAULT_APNS_PORT);
+    }
 
-    // todo connect
+    public Future<Void> connect(final String host, final int port) {
+        final Future<Void> connectionReadyFuture;
 
-    // todo isConnected
+        if (this.bootstrap.config().group().isShuttingDown() || this.bootstrap.config().group().isShutdown()) {
+            connectionReadyFuture = new FailedFuture<>(GlobalEventExecutor.INSTANCE,
+                    new IllegalStateException("Client's event loop group has been shut down and cannot be restarted."));
+        } else {
+            synchronized (this.bootstrap) {
+                if (this.connectionReadyPromise == null) {
+                    final ChannelFuture connectFuture = this.bootstrap.connect(host, port);
+                    this.connectionReadyPromise = connectFuture.channel().newPromise();
+
+                    connectFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
+                        @Override
+                        public void operationComplete(final ChannelFuture future) throws Exception {
+                            synchronized (ApnsHttp2Client.this.bootstrap) {
+                                if (ApnsHttp2Client.this.connectionReadyPromise != null) {
+                                    ApnsHttp2Client.this.connectionReadyPromise.tryFailure(
+                                            new IllegalStateException("Channel closed before HTTP/2 preface completed."));
+                                    ApnsHttp2Client.this.connectionReadyPromise = null;
+                                }
+                                if (ApnsHttp2Client.this.reconnectionPromise != null) {
+                                    logger.debug("Disconnected. Next automatic reconnection attempt in {} seconds.", ApnsHttp2Client.this.reconnectDelaySeconds);
+                                    future.channel().eventLoop().schedule(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            logger.debug("Attempting to reconnect.");
+                                            ApnsHttp2Client.this.connect(host, port);
+                                        }
+                                    }, ApnsHttp2Client.this.reconnectDelaySeconds, TimeUnit.SECONDS);
+                                    ApnsHttp2Client.this.reconnectDelaySeconds = Math.min(ApnsHttp2Client.this.reconnectDelaySeconds, ApnsHttp2Properties.MAX_RECONNECT_DELAY_SECONDS);
+                                }
+                            }
+                            future.channel().eventLoop().submit(new Runnable() {
+                                @Override
+                                public void run() {
+                                    for (final Promise<ApnsPushNotificationResponse<T>> responsePromise : ApnsHttp2Client.this.responsePromises.values()) {
+                                        responsePromise.tryFailure(new ClientNotConnectedException("Client disconnected unexpectedly."));
+                                    }
+                                    ApnsHttp2Client.this.responsePromises.clear();
+                                    ;
+                                }
+                            });
+                        }
+                    });
+                    this.connectionReadyPromise.addListener(new GenericFutureListener<ChannelFuture>() {
+                        @Override
+                        public void operationComplete(final ChannelFuture future) throws Exception {
+                            if (future.isSuccess()) {
+                                synchronized (ApnsHttp2Client.this.bootstrap) {
+                                    if (ApnsHttp2Client.this.reconnectionPromise != null) {
+                                        logger.info("Connection to {} restored.", future.channel().remoteAddress());
+                                        ApnsHttp2Client.this.connectionReadyPromise.trySuccess();
+                                    } else {
+                                        logger.info("Connected to {}.", future.channel().remoteAddress());
+                                    }
+                                    ApnsHttp2Client.this.reconnectDelaySeconds = ApnsHttp2Properties.INITIAL_RECONNECT_DELAY_SECONDS;
+                                    ApnsHttp2Client.this.connectionReadyPromise = future.channel().newPromise();
+                                }
+                            } else {
+                                logger.info("Failed to connect.", future.cause());
+                            }
+                        }
+                    });
+                }
+                connectionReadyFuture = this.connectionReadyPromise;
+            }
+        }
+        return connectionReadyFuture;
+    }
+
+    public boolean isConnected() {
+        final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
+        return (connectionReadyPromise != null && connectionReadyPromise.isSuccess());
+    }
 
     // todo waitForInitialSettings
 
     // todo getReconnectionFuture
 
-    // todo sendNotification
+    public Future<ApnsPushNotificationResponse<T>> sendNotification(final T notification) {
+        final Future<ApnsPushNotificationResponse<T>> responseFuture;
 
-    // todo verifyTopic
+        verifyTopic(notification);
+
+        final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
+        if (connectionReadyPromise != null && connectionReadyPromise.isSuccess() && connectionReadyPromise.channel().isActive()) {
+            final DefaultPromise<ApnsPushNotificationResponse<T>> responsePromise
+                    = new DefaultPromise<>(connectionReadyPromise.channel().eventLoop());
+
+            connectionReadyPromise.channel().eventLoop().submit(new Runnable() {
+                @Override
+                public void run() {
+                    if (ApnsHttp2Client.this.responsePromises.containsKey(notification)) {
+                        responsePromise.setFailure(new IllegalStateException(
+                                "The given notification has already been sent and not yet resolved."));
+                    } else {
+                        ApnsHttp2Client.this.responsePromises.put(notification, responsePromise);
+                    }
+                }
+            });
+
+            connectionReadyPromise.channel().write(notification).addListener(new GenericFutureListener<ChannelFuture>() {
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        logger.debug("Failed to write push notification: {}", notification, future.cause());
+
+                        ApnsHttp2Client.this.responsePromises.remove(notification);
+                        responsePromise.tryFailure(future.cause());
+                    } else {
+                        logger.info("Success to write push notification: {}", notification);
+                    }
+                }
+            });
+
+            responseFuture = responsePromise;
+        } else {
+            logger.debug("Failed to send push notification because client is not connected: {}", notification);
+            responseFuture = new FailedFuture<>(GlobalEventExecutor.INSTANCE, NOT_CONNECTED_EXCEPTION);
+        }
+
+        responseFuture.addListener(new GenericFutureListener<Future<ApnsPushNotificationResponse<T>>>() {
+            @Override
+            public void operationComplete(final Future<ApnsPushNotificationResponse<T>> future) throws Exception {
+                if (future.isSuccess()) {
+                    // Nothing to do
+                }
+            }
+        });
+
+        return responseFuture;
+    }
+
+    private void verifyTopic(T notification) {
+        if (notification.getTopic() == null
+                && this.identities != null
+                && !this.identities.isEmpty()) {
+            notification.setTopic(this.identities.get(0));
+        }
+    }
 
     protected void handlePushNotificationResponse(final ApnsPushNotificationResponse<T> response) {
         logger.info("Received response from APNs gateway: {}", response);
@@ -306,5 +447,40 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     // todo setGracefulShutdownTimeout
 
-    // todo disconnect
+    public Future<Void> disconnect() {
+        logger.info("Disconnecting.");
+        final Future<Void> disconnectFuture;
+        synchronized (this.bootstrap) {
+            this.reconnectionPromise = null;
+
+            final Future<Void> channelCloseFuture;
+
+            if (this.connectionReadyPromise != null) {
+                channelCloseFuture = this.connectionReadyPromise.channel().close();
+            } else {
+                channelCloseFuture = new SucceededFuture<>(GlobalEventExecutor.INSTANCE, null);
+            }
+
+            if (this.shouldShutDownEventLoopGroup) {
+                channelCloseFuture.addListener(new GenericFutureListener<Future<Void>>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        ApnsHttp2Client.this.bootstrap.config().group().shutdownGracefully();
+                    }
+                });
+                disconnectFuture = new DefaultPromise<>(GlobalEventExecutor.INSTANCE);
+
+                this.bootstrap.config().group().terminationFuture().addListener(new GenericFutureListener() {
+                    @Override
+                    public void operationComplete(Future future) throws Exception {
+                        assert disconnectFuture instanceof DefaultPromise;
+                        ((DefaultPromise) disconnectFuture).trySuccess(null);
+                    }
+                });
+            } else {
+                disconnectFuture = channelCloseFuture;
+            }
+        }
+        return disconnectFuture;
+    }
 }
