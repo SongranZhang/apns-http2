@@ -3,7 +3,6 @@ package com.linkedkeeper.apns.client;
 import com.linkedkeeper.apns.data.ApnsPushNotification;
 import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.exceptions.ClientNotConnectedException;
-import com.linkedkeeper.apns.proxy.ProxyHandlerFactory;
 import com.linkedkeeper.apns.utils.P12Utils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -55,7 +54,6 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     private final Bootstrap bootstrap;
     private final boolean shouldShutDownEventLoopGroup;
-    private volatile ProxyHandlerFactory proxyHandlerFactory;
 
     private Long gracefulShutdownTimeoutMillis;
 
@@ -187,11 +185,6 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             protected void initChannel(final SocketChannel channel) throws Exception {
                 final ChannelPipeline pipeline = channel.pipeline();
 
-                final ProxyHandlerFactory proxyHandlerFactory = ApnsHttp2Client.this.proxyHandlerFactory;
-                if (proxyHandlerFactory != null) {
-                    pipeline.addFirst(proxyHandlerFactory.createProxyHandler());
-                }
-
                 if (ApnsHttp2Properties.DEFAULT_WRITE_TIMEOUT_MILLIS > 0) {
                     pipeline.addLast(new WriteTimeoutHandler(ApnsHttp2Properties.DEFAULT_WRITE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
                 }
@@ -277,8 +270,6 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
-
-    // todo setProxyHandlerFactory
 
     public void setConnectionTimeout(final int timeoutMillis) {
         synchronized (this.bootstrap) {

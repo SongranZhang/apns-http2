@@ -282,7 +282,7 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
             } else {
                 assert PING_TIMEOUT_SECONDS < ApnsHttp2Properties.PING_IDLE_TIME_MILLIS;
 
-                logger.trace("Sending ping due to inactivity.");
+                logger.info("Sending ping due to inactivity.");
 
                 final ByteBuf pingDataBuffer = context.alloc().ioBuffer(8, 8);
                 pingDataBuffer.writeLong(this.nextPingId++);
@@ -294,7 +294,7 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
                             ApnsHttp2ClientHandler.this.pingTimeoutFuture = future.channel().eventLoop().schedule(new Runnable() {
                                 @Override
                                 public void run() {
-                                    logger.debug("Closing channel due to ping timeout.");
+                                    logger.info("Closing channel due to ping timeout.");
                                     future.channel().close();
                                 }
                             }, PING_TIMEOUT_SECONDS, TimeUnit.SECONDS);

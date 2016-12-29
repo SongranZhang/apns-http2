@@ -98,8 +98,6 @@ public class ApnsHttp2 {
         return sendNotificationFuture;
     }
 
-    // todo withProxy
-
     public ApnsHttp2 productMode() {
         this.sandboxEnvironment = false;
         return this;
@@ -109,8 +107,6 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = true;
         return this;
     }
-
-    // todo createProxyFactory
 
     private void stablishConnection() throws InterruptedException {
         final Future<Void> connectFuture = sandboxEnvironment ? this.apnsHttp2Client.connectSandBox() : this.apnsHttp2Client.connectProduction();

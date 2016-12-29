@@ -1,6 +1,8 @@
 package com.linkedkeeper.apns;
 
 import com.linkedkeeper.apns.client.ApnsHttp2;
+import com.linkedkeeper.apns.data.ApnsPushNotification;
+import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.data.Payload;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
@@ -11,6 +13,7 @@ import java.io.FileNotFoundException;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * @author frank@linkedkeerp.com on 2016/12/28.
@@ -28,11 +31,20 @@ public class TestApnsHttp2 {
             ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd)
                     .productMode();
 
-            String paylaod = Payload.newPayload()
-                    .alertBody("test apns-http2 " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
-                    .badge(1)
-                    .build();
-            client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
+            for (int i = 0; i < 10; i++) {
+                System.out.println("ready to send, i = " + i);
+
+                String paylaod = Payload.newPayload()
+                        .alertBody("test apns-http2 i" + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
+                        .badge(1)
+                        .build();
+                Future<ApnsPushNotificationResponse<ApnsPushNotification>> future = client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
+                ApnsPushNotificationResponse<ApnsPushNotification> response = future.get();
+
+                System.out.println(response.getRejectionReason());
+
+                Thread.sleep(1000);
+            }
 
             client.disconnect();
         } catch (SSLException e) {
@@ -40,6 +52,8 @@ public class TestApnsHttp2 {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
