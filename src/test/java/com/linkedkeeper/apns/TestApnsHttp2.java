@@ -34,14 +34,16 @@ public class TestApnsHttp2 {
 
             for (int i = 0; i < 10; i++) {
                 String paylaod = Payload.newPayload()
-                        .alertBody("test apns-http2, i = " + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
+                        .alertBody("test#1 apns-http2, i = " + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
                         .badge(1)
                         .build();
 
-                ApnsPushNotificationResponse<ApnsPushNotification> response = client.pushMessageSync(paylaod, splitDeviceToken(goodToken));
-                System.out.println(response.getRejectionReason());
+                Future<ApnsPushNotificationResponse<ApnsPushNotification>> response = client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
+                ApnsPushNotificationResponse<ApnsPushNotification> notification = response.get();
+                boolean success = notification.isAccepted();
+                System.out.println(success);
 
-                Thread.sleep(1000);
+//                Thread.sleep(1000);
             }
 
             client.disconnect();
@@ -52,8 +54,6 @@ public class TestApnsHttp2 {
         } catch (ExecutionException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (CertificateNotValidException e) {
             e.printStackTrace();
         }
     }
