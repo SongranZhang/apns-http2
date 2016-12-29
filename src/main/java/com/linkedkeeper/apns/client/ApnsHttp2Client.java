@@ -184,7 +184,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
         this.bootstrap.option(ChannelOption.TCP_NODELAY, true);
         this.bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
-            protected void initChannel(SocketChannel channel) throws Exception {
+            protected void initChannel(final SocketChannel channel) throws Exception {
                 final ChannelPipeline pipeline = channel.pipeline();
 
                 final ProxyHandlerFactory proxyHandlerFactory = ApnsHttp2Client.this.proxyHandlerFactory;
@@ -199,7 +199,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                 pipeline.addLast(sslContext.newHandler(channel.alloc()));
                 pipeline.addLast(new ApplicationProtocolNegotiationHandler("") {
                     @Override
-                    protected void configurePipeline(final ChannelHandlerContext context, final String protocol) throws Exception {
+                    protected void configurePipeline(final ChannelHandlerContext context, final String protocol) {
                         if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
                             final ApnsHttp2ClientHandler<T> apnsHttp2ClientHandler = new ApnsHttp2ClientHandler.ApnsHttp2ClientHandlerBuilder<T>()
                                     .server(false)
@@ -334,7 +334,6 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                                         responsePromise.tryFailure(new ClientNotConnectedException("Client disconnected unexpectedly."));
                                     }
                                     ApnsHttp2Client.this.responsePromises.clear();
-                                    ;
                                 }
                             });
                         }
@@ -423,7 +422,6 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             public void operationComplete(final Future<ApnsPushNotificationResponse<T>> future) throws Exception {
                 if (future.isSuccess()) {
                     final ApnsPushNotificationResponse<T> response = future.getNow();
-                    // Nothing to do
                 }
             }
         });
@@ -467,7 +465,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             if (this.shouldShutDownEventLoopGroup) {
                 channelCloseFuture.addListener(new GenericFutureListener<Future<Void>>() {
                     @Override
-                    public void operationComplete(Future<Void> future) throws Exception {
+                    public void operationComplete(final Future<Void> future) throws Exception {
                         ApnsHttp2Client.this.bootstrap.config().group().shutdownGracefully();
                     }
                 });
@@ -475,9 +473,9 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
                 this.bootstrap.config().group().terminationFuture().addListener(new GenericFutureListener() {
                     @Override
-                    public void operationComplete(Future future) throws Exception {
+                    public void operationComplete(final Future future) throws Exception {
                         assert disconnectFuture instanceof DefaultPromise;
-                        ((DefaultPromise) disconnectFuture).trySuccess(null);
+                        ((DefaultPromise<Void>) disconnectFuture).trySuccess(null);
                     }
                 });
             } else {

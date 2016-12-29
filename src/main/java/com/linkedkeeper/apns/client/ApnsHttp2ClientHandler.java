@@ -53,6 +53,8 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
 
     private static final String APNS_PATH_PREFIX = "/3/device/";
     private static final AsciiString APNS_EXPIRATION_HEADER = new AsciiString("apns-expiration");
+    private static final AsciiString APNS_TOPIC_HEADER = new AsciiString("apns-topic");
+    private static final AsciiString APNS_PRIORITY_HEADER = new AsciiString("apns-priority");
 
     private static final int INITIAL_PAYLOAD_BUFFER_CAPACITY = 4096;
     private static final long STREAM_ID_RESET_THRESHOLD = Integer.MAX_VALUE - 1;
@@ -117,14 +119,6 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
         public ApnsHttp2ClientHandler<S> build() {
             return super.build();
         }
-    }
-
-    protected ApnsHttp2ClientHandler(final Http2ConnectionDecoder decoder, final Http2ConnectionEncoder encoder, final Http2Settings initialSettings, final ApnsHttp2Client<T> apnsHttp2Client, final String authority, final int maxUnflushedNotifications) {
-        super(decoder, encoder, initialSettings);
-
-        this.apnsHttp2Client = apnsHttp2Client;
-        this.authority = authority;
-        this.maxUnflushedNotifications = maxUnflushedNotifications;
     }
 
     private class ApnsHttp2ClientHandlerFrameAdapter extends Http2FrameAdapter {
@@ -202,6 +196,14 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
         }
     }
 
+
+    protected ApnsHttp2ClientHandler(final Http2ConnectionDecoder decoder, final Http2ConnectionEncoder encoder, final Http2Settings initialSettings, final ApnsHttp2Client<T> apnsHttp2Client, final String authority, final int maxUnflushedNotifications) {
+        super(decoder, encoder, initialSettings);
+
+        this.apnsHttp2Client = apnsHttp2Client;
+        this.authority = authority;
+        this.maxUnflushedNotifications = maxUnflushedNotifications;
+    }
     @Override
     public void write(final ChannelHandlerContext context, final Object payload, final ChannelPromise writePromise) throws Http2Exception {
         try {
@@ -215,10 +217,10 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
                     .addInt(APNS_EXPIRATION_HEADER, pushNotification.getExpiration() == null ? 0 : (int) (pushNotification.getExpiration().getTime() / 1000));
 
             if (pushNotification.getPriority() != null) {
-                headers.addInt(APNS_EXPIRATION_HEADER, pushNotification.getPriority().getCode());
+                headers.addInt(APNS_PRIORITY_HEADER, pushNotification.getPriority().getCode());
             }
             if (pushNotification.getTopic() != null) {
-                headers.add(APNS_PATH_PREFIX, pushNotification.getTopic());
+                headers.add(APNS_TOPIC_HEADER, pushNotification.getTopic());
             }
 
             final ChannelPromise headersPromise = context.newPromise();
