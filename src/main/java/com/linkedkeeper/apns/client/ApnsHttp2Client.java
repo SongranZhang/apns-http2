@@ -380,7 +380,9 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
         verifyTopic(notification);
 
         final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
-        if (connectionReadyPromise != null && connectionReadyPromise.isSuccess() && connectionReadyPromise.channel().isActive()) {
+
+        if (connectionReadyPromise != null && connectionReadyPromise.isSuccess()
+                && connectionReadyPromise.channel().isActive()) {
             final DefaultPromise<ApnsPushNotificationResponse<T>> responsePromise
                     = new DefaultPromise<>(connectionReadyPromise.channel().eventLoop());
 
@@ -420,6 +422,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             @Override
             public void operationComplete(final Future<ApnsPushNotificationResponse<T>> future) throws Exception {
                 if (future.isSuccess()) {
+                    final ApnsPushNotificationResponse<T> response = future.getNow();
                     // Nothing to do
                 }
             }

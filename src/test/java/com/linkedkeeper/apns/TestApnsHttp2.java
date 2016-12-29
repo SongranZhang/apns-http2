@@ -2,7 +2,6 @@ package com.linkedkeeper.apns;
 
 import com.linkedkeeper.apns.client.ApnsHttp2;
 import com.linkedkeeper.apns.data.Payload;
-import com.linkedkeeper.apns.exceptions.CertificateNotValidException;
 import org.apache.commons.lang.StringUtils;
 
 import javax.net.ssl.SSLException;
@@ -15,7 +14,6 @@ import java.util.concurrent.ExecutionException;
  */
 public class TestApnsHttp2 {
 
-
     static final String PUSH_PATH_FILE = "push_release.p12";
     static final boolean product = true;
     static final String pwd = "123456";
@@ -27,7 +25,7 @@ public class TestApnsHttp2 {
             ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd);
 
             String paylaod = Payload.newPayload()
-                    .alertBody("test message from apns http2")
+                    .alertBody("test apns-http2")
                     .badge(1)
                     .build();
             client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));

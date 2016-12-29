@@ -16,11 +16,9 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.util.AsciiString;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.PromiseCombiner;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.omg.CORBA.TIMEOUT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
