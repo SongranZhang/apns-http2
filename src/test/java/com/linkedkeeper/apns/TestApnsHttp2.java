@@ -32,12 +32,12 @@ public class TestApnsHttp2 {
             ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd)
                     .productMode();
 
-            String paylaod = Payload.newPayload()
-                    .alertBody("test apns-http2 " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
-                    .badge(1)
-                    .build();
             for (int i = 0; i < 10; i++) {
-                System.out.println("ready to send, i = " + i);
+                String paylaod = Payload.newPayload()
+                        .alertBody("test apns-http2, i = " + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
+                        .badge(1)
+                        .build();
+
                 ApnsPushNotificationResponse<ApnsPushNotification> response = client.pushMessageSync(paylaod, splitDeviceToken(goodToken));
                 System.out.println(response.getRejectionReason());
 

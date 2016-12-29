@@ -340,7 +340,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                                 synchronized (ApnsHttp2Client.this.bootstrap) {
                                     if (ApnsHttp2Client.this.reconnectionPromise != null) {
                                         logger.info("Connection to {} restored.", future.channel().remoteAddress());
-                                        ApnsHttp2Client.this.connectionReadyPromise.trySuccess();
+                                        ApnsHttp2Client.this.reconnectionPromise.trySuccess();
                                     } else {
                                         logger.info("Connected to {}.", future.channel().remoteAddress());
                                     }
