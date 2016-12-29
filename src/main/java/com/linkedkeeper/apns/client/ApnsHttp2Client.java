@@ -1,6 +1,7 @@
 package com.linkedkeeper.apns.client;
 
-import com.linkedkeeper.apns.data.PushNotification;
+import com.linkedkeeper.apns.data.ApnsPushNotification;
+import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.proxy.ProxyHandlerFactory;
 import com.linkedkeeper.apns.utils.P12Utils;
 import io.netty.bootstrap.Bootstrap;
@@ -10,12 +11,16 @@ import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.socket.oio.OioSocketChannel;
+import io.netty.handler.codec.http2.Http2Error;
+import io.netty.handler.codec.http2.Http2Exception;
 import io.netty.handler.codec.http2.Http2SecurityUtil;
 import io.netty.handler.ssl.*;
 import io.netty.handler.ssl.ApplicationProtocolConfig.Protocol;
 import io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior;
 import io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +37,15 @@ import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author frank@linkedkeerp.com on 2016/12/27.
  */
-public class ApnsHttp2Client<T extends PushNotification> {
+public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     private static final Logger logger = LoggerFactory.getLogger(ApnsHttp2Client.class);
 
@@ -48,12 +56,23 @@ public class ApnsHttp2Client<T extends PushNotification> {
     private final boolean shouldShutDownEventLoopGroup;
     private volatile ProxyHandlerFactory proxyHandlerFactory;
 
+    private Long gracefulShutdownTimeoutMillis;
+    private volatile ChannelPromise connectionReadyPromise;
+    private volatile ChannelPromise reconnectionPromise;
+
+    private final Map<T, Promise<ApnsPushNotificationResponse<T>>> responsePromises = new IdentityHashMap<>();
+
+    private ArrayList<String> identities;
+
     public ApnsHttp2Client(final File p12File, final String password) throws IOException, KeyStoreException {
         this(p12File, password, null);
     }
 
     public ApnsHttp2Client(final File p12File, final String password, final EventLoopGroup eventLoopGroup) throws IOException, KeyStoreException {
         this(ApnsHttp2Client.getSslContextWithP12File(p12File, password), eventLoopGroup);
+        try (final InputStream p12InputStream = new FileInputStream(p12File)) {
+            loadIdentifiers(loadKeyStore(p12InputStream, password));
+        }
     }
 
     public ApnsHttp2Client(KeyStore keyStore, final String password) throws SSLException {
@@ -62,7 +81,12 @@ public class ApnsHttp2Client<T extends PushNotification> {
 
     public ApnsHttp2Client(final KeyStore keyStore, final String password, final EventLoopGroup eventLoopGroup) throws SSLException {
         this(ApnsHttp2Client.getSslContextWithP12InputStream(keyStore, password), eventLoopGroup);
-        // todo
+        loadIdentifiers(keyStore);
+    }
+
+    public void abortConnection(ErrorResponse errorResponse) throws Http2Exception {
+        disconnect();
+        throw new Http2Exception(Http2Error.CONNECT_ERROR, errorResponse.getReason());
     }
 
     private static KeyStore loadKeyStore(final InputStream p12InputStream, final String password) throws SSLException {
@@ -71,6 +95,22 @@ public class ApnsHttp2Client<T extends PushNotification> {
         } catch (KeyStoreException | IOException e) {
             throw new SSLException(e);
         }
+    }
+
+    private void loadIdentifiers(KeyStore keyStore) throws SSLException {
+        try {
+            this.identities = P12Utils.getIdentitiesForP12File(keyStore);
+        } catch (KeyStoreException | IOException e) {
+            throw new SSLException(e);
+        }
+    }
+
+    public ApnsHttp2Client(final X509Certificate certificate, final PrivateKey privateKey, final String privateKeyPassword) throws SSLException {
+        this(certificate, privateKey, privateKeyPassword, null);
+    }
+
+    public ApnsHttp2Client(final X509Certificate certificate, final PrivateKey privateKey, final String privateKeyPassword, final EventLoopGroup eventLoopGroup) throws SSLException {
+        this(ApnsHttp2Client.getSslContextWithCertificateAndPrivateKey(certificate, privateKey, privateKeyPassword), eventLoopGroup);
     }
 
     private static SslContext getSslContextWithP12File(final File p12File, final String password) throws IOException, KeyStoreException {
@@ -154,19 +194,52 @@ public class ApnsHttp2Client<T extends PushNotification> {
                 pipeline.addLast(sslContext.newHandler(channel.alloc()));
                 pipeline.addLast(new ApplicationProtocolNegotiationHandler("") {
                     @Override
-                    protected void configurePipeline(ChannelHandlerContext context, String protocol) throws Exception {
+                    protected void configurePipeline(final ChannelHandlerContext context, final String protocol) throws Exception {
                         if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
-                            final ApnsHttp2ClientHandler<T> http2Handler = new ApnsHttp2ClientHandler.ApnsHttp2ClientHandlerBuilder<T>()
+                            final ApnsHttp2ClientHandler<T> apnsHttp2ClientHandler = new ApnsHttp2ClientHandler.ApnsHttp2ClientHandlerBuilder<T>()
                                     .server(false)
                                     .apnsHttp2Client(ApnsHttp2Client.this)
                                     .authority(((InetSocketAddress) context.channel().remoteAddress()).getHostName())
                                     .maxUnflushedNotifications(ApnsHttp2Properties.DEFAULT_MAX_UNFLUSHED_NOTIFICATIONS)
                                     .encoderEnforceMaxConcurrentStreams(true)
                                     .build();
+
+                            synchronized (ApnsHttp2Client.this.bootstrap) {
+                                if (ApnsHttp2Client.this.gracefulShutdownTimeoutMillis != null) {
+                                    apnsHttp2ClientHandler.gracefulShutdownTimeoutMillis(ApnsHttp2Client.this.gracefulShutdownTimeoutMillis);
+                                }
+                            }
+
+                            context.pipeline().addLast(new IdleStateHandler(0,
+                                    ApnsHttp2Properties.DEFAULT_FLUSH_AFTER_IDLE_MILLIS,
+                                    ApnsHttp2Properties.PING_IDLE_TIME_MILLIS,
+                                    TimeUnit.MILLISECONDS));
+                            context.pipeline().addLast(apnsHttp2ClientHandler);
+
+                            context.channel().eventLoop().submit(new Runnable() {
+                                @Override
+                                public void run() {
+                                    final ChannelPromise connectionReadyPromise = ApnsHttp2Client.this.connectionReadyPromise;
+                                    if (connectionReadyPromise != null) {
+                                        connectionReadyPromise.trySuccess();
+                                    }
+                                }
+                            });
+                        } else {
+                            logger.error("Unexpected protocol: {}", protocol);
+                            context.close();
                         }
                     }
+
+                    @Override
+                    protected void handshakeFailure(final ChannelHandlerContext context, final Throwable cause) throws Exception {
+                        final ChannelPromise connectionReadyPromise = ApnsHttp2Client.this.connectionReadyPromise;
+                        if (connectionReadyPromise != null) {
+                            connectionReadyPromise.tryFailure(cause);
+                        }
+                        super.handshakeFailure(context, cause);
+                    }
                 });
-                // todo not finish
             }
         });
     }
@@ -199,4 +272,39 @@ public class ApnsHttp2Client<T extends PushNotification> {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
+
+    // todo setProxyHandlerFactory
+
+    // todo setConnectionTimerout
+
+    // todo connect
+
+    // todo connectSandBox
+
+    // todo connectProduction
+
+    // todo connect
+
+    // todo isConnected
+
+    // todo waitForInitialSettings
+
+    // todo getReconnectionFuture
+
+    // todo sendNotification
+
+    // todo verifyTopic
+
+    protected void handlePushNotificationResponse(final ApnsPushNotificationResponse<T> response) {
+        logger.info("Received response from APNs gateway: {}", response);
+        if (response.getApnsPushNotification() != null) {
+            this.responsePromises.remove(response.getApnsPushNotification()).setSuccess(response);
+        } else {
+            this.responsePromises.clear();
+        }
+    }
+
+    // todo setGracefulShutdownTimeout
+
+    // todo disconnect
 }

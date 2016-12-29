@@ -2,8 +2,8 @@ package com.linkedkeeper.apns.client;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.linkedkeeper.apns.data.ApnsHttp2PushNotificationResponse;
 import com.linkedkeeper.apns.data.ApnsPushNotification;
-import com.linkedkeeper.apns.data.PushNotification;
 import com.linkedkeeper.apns.utils.DateAsMillisecondsSinceEpochTypeAdapter;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author frank@linkedkeerp.com on 2016/12/28.
  */
-class ApnsHttp2ClientHandler<T extends PushNotification> extends Http2ConnectionHandler {
+class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2ConnectionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ApnsHttp2ClientHandler.class);
 
@@ -42,7 +42,7 @@ class ApnsHttp2ClientHandler<T extends PushNotification> extends Http2Connection
             .registerTypeAdapter(Date.class, new DateAsMillisecondsSinceEpochTypeAdapter())
             .create();
 
-    public static class ApnsHttp2ClientHandlerBuilder<S extends PushNotification> extends AbstractHttp2ConnectionHandlerBuilder<ApnsHttp2ClientHandler<S>, ApnsHttp2ClientHandlerBuilder<S>> {
+    public static class ApnsHttp2ClientHandlerBuilder<S extends ApnsPushNotification> extends AbstractHttp2ConnectionHandlerBuilder<ApnsHttp2ClientHandler<S>, ApnsHttp2ClientHandlerBuilder<S>> {
 
         private ApnsHttp2Client<S> apnsHttp2Client;
         private String authority;
@@ -132,8 +132,8 @@ class ApnsHttp2ClientHandler<T extends PushNotification> extends Http2Connection
                 final boolean success = HttpResponseStatus.OK.equals(HttpResponseStatus.parseLine(headers.status()));
                 final ErrorResponse errorResponse = gson.fromJson(data.toString(StandardCharsets.UTF_8), ErrorResponse.class);
 
-//                ApnsHttp2ClientHandler.this.apnsHttp2Client.handlePushNotificationResponse(new ApnsPushNotificationResponse<>(
-//                        pushNotification, success, errorResponse.getReason(), errorResponse.getTimestamp()));
+                ApnsHttp2ClientHandler.this.apnsHttp2Client.handlePushNotificationResponse(new ApnsHttp2PushNotificationResponse<>(
+                        pushNotification, success, errorResponse.getReason(), errorResponse.getTimestamp()));
             } else {
                 logger.error("Gateway sent a DATA frame that was not the end of a stream.");
             }
@@ -157,8 +157,8 @@ class ApnsHttp2ClientHandler<T extends PushNotification> extends Http2Connection
                     logger.error("Gateway sent an end-of-stream HEADERS frame for an unsuccessful notification.");
                 }
                 final T pushNotification = ApnsHttp2ClientHandler.this.pushNotificationsByStreamId.remove(streamId);
-//                ApnsHttp2ClientHandler.this.apnsHttp2Client.handlePushNotificationResponse(new ApnsPushNotificationresponse<>(
-//                        pushNotification, streamId, null, null));
+                ApnsHttp2ClientHandler.this.apnsHttp2Client.handlePushNotificationResponse(new ApnsHttp2PushNotificationResponse<>(
+                        pushNotification, success, null, null));
             } else {
                 ApnsHttp2ClientHandler.this.headersByStreamId.put(streamId, headers);
             }
@@ -179,9 +179,19 @@ class ApnsHttp2ClientHandler<T extends PushNotification> extends Http2Connection
             logger.info("Received GOAWAY from APNs server: {}", debugData.toString(StandardCharsets.UTF_8));
 
             ErrorResponse errorResponse = gson.fromJson(debugData.toString(StandardCharsets.UTF_8), ErrorResponse.class);
-//            ApnsHttp2ClientHandler.this.apnsHttp2Client.abortConnection(errorResponse);
+            ApnsHttp2ClientHandler.this.apnsHttp2Client.abortConnection(errorResponse);
         }
     }
+
+    // todo write
+
+    // todo flush
+
+    // todo userEventTriggered
+
+    // todo exceptionCaught
+
+    // todo waitForInitialSettings
 }
 
 

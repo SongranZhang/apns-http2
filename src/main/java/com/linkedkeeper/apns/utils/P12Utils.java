@@ -2,14 +2,14 @@ package com.linkedkeeper.apns.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.KeyStore;
+import java.security.*;
 import java.security.KeyStore.PrivateKeyEntry;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author frank@linkedkeerp.com on 2016/12/27.
@@ -53,5 +53,27 @@ public class P12Utils {
             throw new KeyStoreException(e);
         }
         return keyStore;
+    }
+
+    private static final String UDID_KEY = "UID";
+
+    public static ArrayList<String> getIdentitiesForP12File(final KeyStore keyStore) throws KeyStoreException, IOException {
+        final Enumeration<String> aliases = keyStore.aliases();
+        ArrayList<String> identifiers = new ArrayList<>();
+        while (aliases.hasMoreElements()) {
+            String alias = aliases.nextElement();
+            X509Certificate c = (X509Certificate) keyStore.getCertificate(alias);
+            Principal subject = c.getSubjectDN();
+            String subjectArray[] = subject.toString().split(",");
+            for (String s : subjectArray) {
+                String[] str = s.trim().split("=");
+                String key = str[0];
+                String value = str[1];
+                if (UDID_KEY.equals(key)) {
+                    identifiers.add(value);
+                }
+            }
+        }
+        return identifiers;
     }
 }

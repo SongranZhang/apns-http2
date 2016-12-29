@@ -1,11 +1,13 @@
 package com.linkedkeeper.apns;
 
 import com.linkedkeeper.apns.client.ApnsHttp2;
+import com.linkedkeeper.apns.data.Payload;
 import org.apache.commons.lang.StringUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author frank@linkedkeerp.com on 2016/12/28.
@@ -22,13 +24,18 @@ public class TestApnsHttp2 {
     public static void main(String[] args) {
         try {
             ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd);
-//            client.pushMessageAsync("test message from http2", splitDeviceToken(goodToken));
+
+            String paylaod = Payload.newPayload()
+                    .alertBody("test message from apns http2")
+                    .badge(1)
+                    .build();
+            client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
         } catch (SSLException e) {
             e.printStackTrace();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-//        } catch (ExecutionException e) {
-//            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         }
     }
 

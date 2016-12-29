@@ -3,13 +3,10 @@ package com.linkedkeeper.apns.data;
 /**
  * @author frank@linkedkeerp.com on 2016/12/27.
  */
-public class ApnsPushNotification implements PushNotification {
+public interface ApnsPushNotification {
 
-    public String getToken() {
-        return null;
-    }
+    String getToken();
 
-    public String getPayload() {
-        return null;
-    }
+    String getPayload();
+
 }
