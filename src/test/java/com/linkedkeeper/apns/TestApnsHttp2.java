@@ -4,6 +4,7 @@ import com.linkedkeeper.apns.client.ApnsHttp2;
 import com.linkedkeeper.apns.data.ApnsPushNotification;
 import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.data.Payload;
+import com.linkedkeeper.apns.exceptions.CertificateNotValidException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 
@@ -31,16 +32,13 @@ public class TestApnsHttp2 {
             ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd)
                     .productMode();
 
+            String paylaod = Payload.newPayload()
+                    .alertBody("test apns-http2 " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
+                    .badge(1)
+                    .build();
             for (int i = 0; i < 10; i++) {
                 System.out.println("ready to send, i = " + i);
-
-                String paylaod = Payload.newPayload()
-                        .alertBody("test apns-http2 i" + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
-                        .badge(1)
-                        .build();
-                Future<ApnsPushNotificationResponse<ApnsPushNotification>> future = client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
-                ApnsPushNotificationResponse<ApnsPushNotification> response = future.get();
-
+                ApnsPushNotificationResponse<ApnsPushNotification> response = client.pushMessageSync(paylaod, splitDeviceToken(goodToken));
                 System.out.println(response.getRejectionReason());
 
                 Thread.sleep(1000);
@@ -54,6 +52,8 @@ public class TestApnsHttp2 {
         } catch (ExecutionException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (CertificateNotValidException e) {
             e.printStackTrace();
         }
     }

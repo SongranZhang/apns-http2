@@ -345,7 +345,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                                         logger.info("Connected to {}.", future.channel().remoteAddress());
                                     }
                                     ApnsHttp2Client.this.reconnectDelaySeconds = ApnsHttp2Properties.INITIAL_RECONNECT_DELAY_SECONDS;
-                                    ApnsHttp2Client.this.connectionReadyPromise = future.channel().newPromise();
+                                    ApnsHttp2Client.this.reconnectionPromise = future.channel().newPromise();
                                 }
                             } else {
                                 logger.info("Failed to connect.", future.cause());
