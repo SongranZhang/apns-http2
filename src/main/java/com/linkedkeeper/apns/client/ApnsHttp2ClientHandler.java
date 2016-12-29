@@ -107,7 +107,7 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
         }
 
         @Override
-        protected ApnsHttp2ClientHandler<S> build(final Http2ConnectionDecoder decoder, final Http2ConnectionEncoder encoder, final Http2Settings initialSettings) throws Exception {
+        public ApnsHttp2ClientHandler<S> build(final Http2ConnectionDecoder decoder, final Http2ConnectionEncoder encoder, final Http2Settings initialSettings) throws Exception {
             Objects.requireNonNull(this.authority, "Authority must be set before building an HttpClientHandler.");
 
             final ApnsHttp2ClientHandler<S> handler = new ApnsHttp2ClientHandler<>(decoder, encoder, initialSettings, this.apnsHttp2Client, this.authority, this.maxUnflushedNotifications);
@@ -204,6 +204,7 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
         this.authority = authority;
         this.maxUnflushedNotifications = maxUnflushedNotifications;
     }
+
     @Override
     public void write(final ChannelHandlerContext context, final Object payload, final ChannelPromise writePromise) throws Http2Exception {
         try {
@@ -259,6 +260,7 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
             }
         } catch (final ClassCastException e) {
             logger.error("Unexpected object in pipeline: {}", payload);
+            context.write(payload, writePromise);
         }
     }
 

@@ -100,9 +100,15 @@ public class ApnsHttp2 {
 
     // todo withProxy
 
-    // todo productMode
+    public ApnsHttp2 productMode() {
+        this.sandboxEnvironment = false;
+        return this;
+    }
 
-    // todo sandboxMode
+    public ApnsHttp2 sandboxMode() {
+        this.sandboxEnvironment = true;
+        return this;
+    }
 
     // todo createProxyFactory
 
@@ -111,6 +117,10 @@ public class ApnsHttp2 {
         connectFuture.await();
     }
 
-    // todo disconnect
+    public void disconnect() {
+        if (apnsHttp2Client.isConnected()) {
+            apnsHttp2Client.disconnect();
+        }
+    }
 
 }

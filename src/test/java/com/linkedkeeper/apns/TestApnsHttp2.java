@@ -3,10 +3,13 @@ package com.linkedkeeper.apns;
 import com.linkedkeeper.apns.client.ApnsHttp2;
 import com.linkedkeeper.apns.data.Payload;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DateFormatUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -22,13 +25,16 @@ public class TestApnsHttp2 {
 
     public static void main(String[] args) {
         try {
-            ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd);
+            ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd)
+                    .productMode();
 
             String paylaod = Payload.newPayload()
-                    .alertBody("test apns-http2")
+                    .alertBody("test apns-http2 " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
                     .badge(1)
                     .build();
             client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
+
+            client.disconnect();
         } catch (SSLException e) {
             e.printStackTrace();
         } catch (FileNotFoundException e) {

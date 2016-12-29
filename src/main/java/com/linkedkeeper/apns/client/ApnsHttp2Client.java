@@ -280,7 +280,11 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     // todo setProxyHandlerFactory
 
-    // todo setConnectionTimeout
+    public void setConnectionTimeout(final int timeoutMillis) {
+        synchronized (this.bootstrap) {
+            this.bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMillis);
+        }
+    }
 
     public Future<Void> connect(final String host) {
         return this.connect(host, ApnsHttp2Properties.DEFAULT_APNS_PORT);
@@ -369,9 +373,24 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
         return (connectionReadyPromise != null && connectionReadyPromise.isSuccess());
     }
 
-    // todo waitForInitialSettings
+    void waitForInitialSettings() throws InterruptedException {
+        this.connectionReadyPromise.channel().pipeline().get(ApnsHttp2ClientHandler.class).waitForInitialSettings();
+    }
 
-    // todo getReconnectionFuture
+    public Future<Void> getReconnectionFuture() {
+        final Future<Void> reconnectionFuture;
+        synchronized (this.bootstrap) {
+            if (this.isConnected()) {
+                reconnectionFuture = this.connectionReadyPromise.channel().newSucceededFuture();
+            } else if (this.reconnectionPromise != null) {
+                reconnectionFuture = this.reconnectionPromise;
+            } else {
+                reconnectionFuture = new FailedFuture<>(GlobalEventExecutor.INSTANCE,
+                        new IllegalStateException("Client was not previously connected."));
+            }
+        }
+        return reconnectionFuture;
+    }
 
     public Future<ApnsPushNotificationResponse<T>> sendNotification(final T notification) {
         final Future<ApnsPushNotificationResponse<T>> responseFuture;
@@ -446,7 +465,17 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
         }
     }
 
-    // todo setGracefulShutdownTimeout
+    public void setGracefulShutdownTimeout(final long timeoutMillis) {
+        synchronized (this.bootstrap) {
+            this.gracefulShutdownTimeoutMillis = timeoutMillis;
+            if (this.connectionReadyPromise != null) {
+                final ApnsHttp2ClientHandler handler = this.connectionReadyPromise.channel().pipeline().get(ApnsHttp2ClientHandler.class);
+                if (handler != null) {
+                    handler.gracefulShutdownTimeoutMillis(timeoutMillis);
+                }
+            }
+        }
+    }
 
     public Future<Void> disconnect() {
         logger.info("Disconnecting.");
