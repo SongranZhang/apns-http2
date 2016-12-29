@@ -280,7 +280,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     // todo setProxyHandlerFactory
 
-    // todo setConnectionTimerout
+    // todo setConnectionTimeout
 
     public Future<Void> connect(final String host) {
         return this.connect(host, ApnsHttp2Properties.DEFAULT_APNS_PORT);
@@ -412,7 +412,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
             responseFuture = responsePromise;
         } else {
-            logger.debug("Failed to send push notification because client is not connected: {}", notification);
+            logger.error("Failed to send push notification because client is not connected: {}", notification);
             responseFuture = new FailedFuture<>(GlobalEventExecutor.INSTANCE, NOT_CONNECTED_EXCEPTION);
         }
 

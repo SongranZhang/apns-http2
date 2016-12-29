@@ -2,6 +2,7 @@ package com.linkedkeeper.apns;
 
 import com.linkedkeeper.apns.client.ApnsHttp2;
 import com.linkedkeeper.apns.data.Payload;
+import com.linkedkeeper.apns.exceptions.CertificateNotValidException;
 import org.apache.commons.lang.StringUtils;
 
 import javax.net.ssl.SSLException;

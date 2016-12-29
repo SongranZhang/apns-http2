@@ -13,6 +13,7 @@ import com.linkedkeeper.apns.data.ApnsHttp2PushNotification;
 import com.linkedkeeper.apns.data.ApnsHttp2PushNotificationResponse;
 import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.exceptions.CertificateNotValidException;
+import com.linkedkeeper.apns.exceptions.ClientNotConnectedException;
 import com.linkedkeeper.apns.utils.P12Utils;
 import io.netty.util.concurrent.Future;
 import org.slf4j.Logger;
@@ -39,7 +40,6 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = false;
     }
 
-
     public ApnsHttp2(final InputStream p12InputStream, final String password) throws SSLException {
         try {
             KeyStore keyStore = P12Utils.loadPCKS12KeyStore(p12InputStream, password);
@@ -53,6 +53,27 @@ public class ApnsHttp2 {
     }
 
     public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
+        try {
+            if (!this.apnsHttp2Client.isConnected()) {
+                stablishConnection();
+            }
+            final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
+            final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
+            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse = sendNotificationFuture.get();
+
+            return apnsPushNotificationResponse;
+        } catch (final ExecutionException e) {
+            logger.error("Failed to send push notification.", e);
+            if (e.getCause() instanceof CertificateNotValidException) {
+                throw e;
+            }
+            if (e.getCause() instanceof ClientNotConnectedException) {
+                throw new CertificateNotValidException(e.getMessage());
+            }
+            throw e;
+        } catch (InterruptedException e) {
+            throw new ExecutionException(e);
+        }
     }
 
     /**
