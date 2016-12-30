@@ -118,5 +118,4 @@ public class ApnsHttp2 {
             apnsHttp2Client.disconnect();
         }
     }
-
 }
