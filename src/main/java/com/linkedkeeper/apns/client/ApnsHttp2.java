@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLException;
 
@@ -52,14 +54,17 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = false;
     }
 
-    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
+    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token, int timeout) throws ExecutionException, CertificateNotValidException {
         try {
             if (!this.apnsHttp2Client.isConnected()) {
                 stablishConnection();
             }
-            final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
-            final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
-            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse = sendNotificationFuture.get();
+            final ApnsPushNotification apnsPushNotification
+                    = new ApnsHttp2PushNotification(token, null, payload);
+            final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture
+                    = this.apnsHttp2Client.sendNotification(apnsPushNotification);
+            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse
+                    = sendNotificationFuture.get(timeout, TimeUnit.SECONDS);
 
             return apnsPushNotificationResponse;
         } catch (final ExecutionException e) {
@@ -71,7 +76,7 @@ public class ApnsHttp2 {
                 throw new CertificateNotValidException(e.getMessage());
             }
             throw e;
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | TimeoutException e) {
             throw new ExecutionException(e);
         }
     }
