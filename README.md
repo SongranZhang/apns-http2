@@ -13,7 +13,7 @@ ApnsHttp2 client = new ApnsHttp2(new FileInputStream("/path/to/certificate.p12",
 ```
 ###Build your notification
 ```java
-tring paylaod = Payload.newPayload()
+String paylaod = Payload.newPayload()
                         .alertBody("Hello")
                         .badge(1)
                         .build();
