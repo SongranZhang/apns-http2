@@ -1,5 +1,5 @@
 #apns-http2
-A Java library for sending notifications via APNS using Apple's new HTTP/2 API. This library uses netty.<br/>
+A Java library for sending notifications via APNS using Apple's new HTTP/2 API. This library uses Netty4.<br/>
 Note: This is required until Java 7 is released.
 
 #Installation
