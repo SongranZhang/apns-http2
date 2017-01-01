@@ -6,13 +6,10 @@ import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLException;
 
 import com.linkedkeeper.apns.data.ApnsHttp2PushNotification;
-import com.linkedkeeper.apns.data.ApnsHttp2PushNotificationResponse;
 import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.exceptions.CertificateNotValidException;
 import com.linkedkeeper.apns.exceptions.ClientNotConnectedException;
@@ -54,7 +51,7 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = false;
     }
 
-    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token, int timeout) throws ExecutionException, CertificateNotValidException {
+    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
         try {
             if (!this.apnsHttp2Client.isConnected()) {
                 stablishConnection();
@@ -64,7 +61,7 @@ public class ApnsHttp2 {
             final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture
                     = this.apnsHttp2Client.sendNotification(apnsPushNotification);
             final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse
-                    = sendNotificationFuture.get(timeout, TimeUnit.SECONDS);
+                    = sendNotificationFuture.get();
 
             return apnsPushNotificationResponse;
         } catch (final ExecutionException e) {
@@ -76,7 +73,7 @@ public class ApnsHttp2 {
                 throw new CertificateNotValidException(e.getMessage());
             }
             throw e;
-        } catch (InterruptedException | TimeoutException e) {
+        } catch (InterruptedException e) {
             throw new ExecutionException(e);
         }
     }
