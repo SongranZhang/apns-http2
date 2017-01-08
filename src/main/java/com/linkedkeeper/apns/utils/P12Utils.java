@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/27.
+ * @author frank@linkedkeeper.com on 2016/12/27.
  */
 public class P12Utils {
 

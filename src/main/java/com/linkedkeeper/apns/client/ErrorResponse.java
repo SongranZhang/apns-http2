@@ -3,7 +3,7 @@ package com.linkedkeeper.apns.client;
 import java.util.Date;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/28.
+ * @author frank@linkedkeeper.com on 2016/12/28.
  */
 public class ErrorResponse {
 

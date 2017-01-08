@@ -5,7 +5,7 @@ import com.linkedkeeper.apns.client.DeliveryPriority;
 import java.util.Date;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/27.
+ * @author frank@linkedkeeper.com on 2016/12/27.
  */
 public class ApnsHttp2PushNotification implements ApnsPushNotification {
 

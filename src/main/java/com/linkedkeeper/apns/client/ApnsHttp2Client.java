@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/27.
+ * @author frank@linkedkeeper.com on 2016/12/27.
  */
 public class ApnsHttp2Client<T extends ApnsPushNotification> {
 

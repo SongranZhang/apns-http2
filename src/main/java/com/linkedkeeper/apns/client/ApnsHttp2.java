@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.linkedkeeper.apns.data.ApnsPushNotification;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/27.
+ * @author frank@linkedkeeper.com on 2016/12/27.
  */
 public class ApnsHttp2 {
 

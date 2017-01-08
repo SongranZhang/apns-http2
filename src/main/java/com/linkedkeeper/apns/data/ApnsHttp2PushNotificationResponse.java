@@ -3,7 +3,7 @@ package com.linkedkeeper.apns.data;
 import java.util.Date;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/29.
+ * @author frank@linkedkeeper.com on 2016/12/29.
  */
 public class ApnsHttp2PushNotificationResponse<T extends ApnsPushNotification> implements ApnsPushNotificationResponse<T> {
 

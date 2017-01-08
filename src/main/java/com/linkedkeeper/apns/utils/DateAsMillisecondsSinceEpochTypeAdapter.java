@@ -6,7 +6,7 @@ import java.lang.reflect.Type;
 import java.util.Date;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/28.
+ * @author frank@linkedkeeper.com on 2016/12/28.
  */
 public class DateAsMillisecondsSinceEpochTypeAdapter implements JsonSerializer<Date>, JsonDeserializer<Date> {
     @Override

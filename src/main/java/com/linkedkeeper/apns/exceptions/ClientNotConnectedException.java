@@ -1,7 +1,7 @@
 package com.linkedkeeper.apns.exceptions;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/29.
+ * @author frank@linkedkeeper.com on 2016/12/29.
  */
 public class ClientNotConnectedException extends IllegalStateException {
 

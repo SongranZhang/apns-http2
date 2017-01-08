@@ -1,7 +1,7 @@
 package com.linkedkeeper.apns.client;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/29.
+ * @author frank@linkedkeeper.com on 2016/12/29.
  */
 public enum DeliveryPriority {
 

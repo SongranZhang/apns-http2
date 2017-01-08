@@ -11,7 +11,7 @@ import java.util.Map;
  * Represents a builder for constructing Payload requests, as
  * specified by Apple Push Notification Programming Guide.
  *
- * @author frank@linkedkeerp.com on 2016/12/29.
+ * @author frank@linkedkeeper.com on 2016/12/29.
  */
 public final class PayloadBuilder {
 

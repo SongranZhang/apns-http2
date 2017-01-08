@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @author frank@linkedkeerp.com on 2016/12/28.
+ * @author frank@linkedkeeper.com on 2016/12/28.
  */
 class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2ConnectionHandler {
 
