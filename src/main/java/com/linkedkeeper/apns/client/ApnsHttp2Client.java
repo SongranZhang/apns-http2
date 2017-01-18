@@ -264,7 +264,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
     private Class<? extends Channel> loadSocketChannelClass(final String className) {
         try {
             final Class<?> clazz = Class.forName(className);
-            logger.debug("Loaded socket channel class: {}", clazz);
+            logger.info("Loaded socket channel class: {}", clazz);
             return clazz.asSubclass(Channel.class);
         } catch (final ClassNotFoundException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
@@ -311,11 +311,11 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                                     ApnsHttp2Client.this.connectionReadyPromise = null;
                                 }
                                 if (ApnsHttp2Client.this.reconnectionPromise != null) {
-                                    logger.debug("Disconnected. Next automatic reconnection attempt in {} seconds.", ApnsHttp2Client.this.reconnectDelaySeconds);
+                                    logger.error("Disconnected. Next automatic reconnection attempt in {} seconds.", ApnsHttp2Client.this.reconnectDelaySeconds);
                                     future.channel().eventLoop().schedule(new Runnable() {
                                         @Override
                                         public void run() {
-                                            logger.debug("Attempting to reconnect.");
+                                            logger.warn("Attempting to reconnect.");
                                             ApnsHttp2Client.this.connect(host, port);
                                         }
                                     }, ApnsHttp2Client.this.reconnectDelaySeconds, TimeUnit.SECONDS);
@@ -411,7 +411,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
-                        logger.debug("Failed to write push notification: {}", notification, future.cause());
+                        logger.error("Failed to write push notification: {}", notification, future.cause());
 
                         ApnsHttp2Client.this.responsePromises.remove(notification);
                         responsePromise.tryFailure(future.cause());

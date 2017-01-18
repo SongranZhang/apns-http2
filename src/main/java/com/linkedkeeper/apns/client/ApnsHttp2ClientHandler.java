@@ -313,7 +313,7 @@ class ApnsHttp2ClientHandler<T extends ApnsPushNotification> extends Http2Connec
     @Override
     public void exceptionCaught(final ChannelHandlerContext context, final Throwable cause) throws Exception {
         if (cause instanceof WriteTimeoutException) {
-            logger.debug("Closing connection due to write timeout.");
+            logger.error("Closing connection due to write timeout.");
             context.close();
         } else {
             logger.warn("APNs client pipeline exception.", cause);

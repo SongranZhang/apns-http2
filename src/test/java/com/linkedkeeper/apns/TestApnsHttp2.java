@@ -4,14 +4,12 @@ import com.linkedkeeper.apns.client.ApnsHttp2;
 import com.linkedkeeper.apns.data.ApnsPushNotification;
 import com.linkedkeeper.apns.data.ApnsPushNotificationResponse;
 import com.linkedkeeper.apns.data.Payload;
-import com.linkedkeeper.apns.exceptions.CertificateNotValidException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.text.DateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -32,7 +30,7 @@ public class TestApnsHttp2 {
             ApnsHttp2 client = new ApnsHttp2(new FileInputStream(generatePushFile()), pwd)
                     .productMode();
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 1; i++) {
                 String paylaod = Payload.newPayload()
                         .alertBody("test#1 apns-http2, i = " + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
                         .badge(1)

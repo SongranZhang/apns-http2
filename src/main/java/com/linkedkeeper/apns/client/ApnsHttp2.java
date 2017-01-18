@@ -56,12 +56,9 @@ public class ApnsHttp2 {
             if (!this.apnsHttp2Client.isConnected()) {
                 stablishConnection();
             }
-            final ApnsPushNotification apnsPushNotification
-                    = new ApnsHttp2PushNotification(token, null, payload);
-            final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture
-                    = this.apnsHttp2Client.sendNotification(apnsPushNotification);
-            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse
-                    = sendNotificationFuture.get();
+            final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
+            final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
+            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse = sendNotificationFuture.get();
 
             return apnsPushNotificationResponse;
         } catch (final ExecutionException e) {
