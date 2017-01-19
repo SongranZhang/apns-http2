@@ -361,7 +361,8 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     public boolean isConnected() {
         final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
-        return (connectionReadyPromise != null && connectionReadyPromise.isSuccess());
+        return (connectionReadyPromise != null && connectionReadyPromise.isSuccess()
+                && connectionReadyPromise.channel().isActive());
     }
 
     void waitForInitialSettings() throws InterruptedException {
@@ -427,14 +428,14 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             responseFuture = new FailedFuture<>(GlobalEventExecutor.INSTANCE, NOT_CONNECTED_EXCEPTION);
         }
 
-        responseFuture.addListener(new GenericFutureListener<Future<ApnsPushNotificationResponse<T>>>() {
-            @Override
-            public void operationComplete(final Future<ApnsPushNotificationResponse<T>> future) throws Exception {
-                if (future.isSuccess()) {
-                    final ApnsPushNotificationResponse<T> response = future.getNow();
-                }
-            }
-        });
+//        responseFuture.addListener(new GenericFutureListener<Future<ApnsPushNotificationResponse<T>>>() {
+//            @Override
+//            public void operationComplete(final Future<ApnsPushNotificationResponse<T>> future) throws Exception {
+//                if (!future.isSuccess()) {
+//
+//                }
+//            }
+//        });
 
         return responseFuture;
     }
