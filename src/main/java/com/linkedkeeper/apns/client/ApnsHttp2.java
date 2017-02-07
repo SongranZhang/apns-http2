@@ -54,6 +54,7 @@ public class ApnsHttp2 {
     public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
         try {
             if (!this.apnsHttp2Client.isConnected()) {
+                logger.error("APNs http2 client connect is lost, stablish connection ...");
                 stablishConnection();
             }
             final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
@@ -84,17 +85,19 @@ public class ApnsHttp2 {
      * @throws ExecutionException
      */
     public Future<ApnsPushNotificationResponse<ApnsPushNotification>> pushMessageAsync(final String payload, final String token) throws ExecutionException {
-        if (!this.apnsHttp2Client.isConnected()) {
-            try {
+        try {
+            if (!this.apnsHttp2Client.isConnected()) {
+                logger.error("APNs http2 client connect is lost, stablish connection ...");
                 stablishConnection();
-            } catch (InterruptedException e) {
-                logger.error("pushMessageAsync error.");
             }
-        }
-        final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
-        final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
+            final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
+            final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
 
-        return sendNotificationFuture;
+            return sendNotificationFuture;
+        } catch (InterruptedException e) {
+            logger.error("Failed to send push notification.", e);
+            throw new ExecutionException(e);
+        }
     }
 
     public ApnsHttp2 productMode() {

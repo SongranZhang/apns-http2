@@ -389,10 +389,8 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
         verifyTopic(notification);
 
-        final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
-
-        if (connectionReadyPromise != null && connectionReadyPromise.isSuccess()
-                && connectionReadyPromise.channel().isActive()) {
+        if (this.isConnected()) {
+            final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
             final DefaultPromise<ApnsPushNotificationResponse<T>> responsePromise
                     = new DefaultPromise<>(connectionReadyPromise.channel().eventLoop());
 
@@ -427,15 +425,6 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
             logger.error("Failed to send push notification because client is not connected: {}", notification);
             responseFuture = new FailedFuture<>(GlobalEventExecutor.INSTANCE, NOT_CONNECTED_EXCEPTION);
         }
-
-//        responseFuture.addListener(new GenericFutureListener<Future<ApnsPushNotificationResponse<T>>>() {
-//            @Override
-//            public void operationComplete(final Future<ApnsPushNotificationResponse<T>> future) throws Exception {
-//                if (!future.isSuccess()) {
-//
-//                }
-//            }
-//        });
 
         return responseFuture;
     }
