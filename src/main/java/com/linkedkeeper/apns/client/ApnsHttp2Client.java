@@ -208,6 +208,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                                 }
                             }
 
+                            /** IdleStateHandler is send heart-beat to apns that remain the connection **/
                             context.pipeline().addLast(new IdleStateHandler(0,
                                     ApnsHttp2Properties.DEFAULT_FLUSH_AFTER_IDLE_MILLIS,
                                     ApnsHttp2Properties.PING_IDLE_TIME_MILLIS,
@@ -297,13 +298,15 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                     new IllegalStateException("Client's event loop group has been shut down and cannot be restarted."));
         } else {
             synchronized (this.bootstrap) {
+                logger.info("connect {}:{}. this connectionReadyPromise {}." + this.connectionReadyPromise, host, port, this.connectionReadyPromise);
                 if (this.connectionReadyPromise == null) {
                     final ChannelFuture connectFuture = this.bootstrap.connect(host, port);
                     this.connectionReadyPromise = connectFuture.channel().newPromise();
-
+                    /** this listener is add in channel, its effect is attempt to reconnect when the channel close **/
                     connectFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {
+                            logger.info("connectFuture.channel close operationComplete, this connectionReadyPromise {}", ApnsHttp2Client.this.connectionReadyPromise);
                             synchronized (ApnsHttp2Client.this.bootstrap) {
                                 if (ApnsHttp2Client.this.connectionReadyPromise != null) {
                                     ApnsHttp2Client.this.connectionReadyPromise.tryFailure(
@@ -333,9 +336,11 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                             });
                         }
                     });
+                    /** this listener's effect is get reconnectionPromise after connect success. **/
                     this.connectionReadyPromise.addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {
+                            logger.info("connectionReadyPromise operationComplete, this connectionReadyPromise {}", ApnsHttp2Client.this.connectionReadyPromise);
                             if (future.isSuccess()) {
                                 synchronized (ApnsHttp2Client.this.bootstrap) {
                                     if (ApnsHttp2Client.this.reconnectionPromise != null) {
@@ -352,6 +357,10 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                             }
                         }
                     });
+                }
+
+                if (this.connectionReadyPromise != null) {
+                    logger.info("this connectionReadyPromise isSuccess {} and its channel isActive {}" + this.connectionReadyPromise.isSuccess(), this.connectionReadyPromise.channel().isActive());
                 }
                 connectionReadyFuture = this.connectionReadyPromise;
             }

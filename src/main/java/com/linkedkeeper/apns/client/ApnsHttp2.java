@@ -46,7 +46,7 @@ public class ApnsHttp2 {
         } catch (SSLException e) {
             throw e;
         } catch (IOException | KeyStoreException e) {
-            e.printStackTrace();
+            throw new SSLException(e);
         }
         this.sandboxEnvironment = false;
     }
@@ -63,7 +63,7 @@ public class ApnsHttp2 {
 
             return apnsPushNotificationResponse;
         } catch (final ExecutionException e) {
-            logger.error("Failed to send push notification.", e);
+            logger.error("Failed to send push(sync) notification.", e);
             if (e.getCause() instanceof CertificateNotValidException) {
                 throw e;
             }
@@ -95,7 +95,7 @@ public class ApnsHttp2 {
 
             return sendNotificationFuture;
         } catch (InterruptedException e) {
-            logger.error("Failed to send push notification.", e);
+            logger.error("Failed to send push(async) notification.", e);
             throw new ExecutionException(e);
         }
     }
