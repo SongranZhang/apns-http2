@@ -298,7 +298,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                     new IllegalStateException("Client's event loop group has been shut down and cannot be restarted."));
         } else {
             synchronized (this.bootstrap) {
-                logger.info("connect {}:{}. this connectionReadyPromise {}." + this.connectionReadyPromise, host, port, this.connectionReadyPromise);
+                logger.info("connect {}:{}. this connectionReadyPromise {}.", host, port, this.connectionReadyPromise);
                 if (this.connectionReadyPromise == null) {
                     final ChannelFuture connectFuture = this.bootstrap.connect(host, port);
                     this.connectionReadyPromise = connectFuture.channel().newPromise();
@@ -360,7 +360,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                 }
 
                 if (this.connectionReadyPromise != null) {
-                    logger.info("this connectionReadyPromise isSuccess {} and its channel isActive {}" + this.connectionReadyPromise.isSuccess(), this.connectionReadyPromise.channel().isActive());
+                    logger.info("this connectionReadyPromise isSuccess {} and its channel isActive {}", this.connectionReadyPromise.isSuccess(), this.connectionReadyPromise.channel().isActive());
                 }
                 connectionReadyFuture = this.connectionReadyPromise;
             }
