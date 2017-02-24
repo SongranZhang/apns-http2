@@ -353,14 +353,14 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                                     ApnsHttp2Client.this.reconnectionPromise = future.channel().newPromise();
                                 }
                             } else {
-                                logger.info("Failed to connect.", future.cause());
+                                logger.error("Failed to connect.", future.cause());
                             }
                         }
                     });
                 }
 
                 if (this.connectionReadyPromise != null) {
-                    logger.info("this connectionReadyPromise isSuccess {} and its channel isActive {}", this.connectionReadyPromise.isSuccess(), this.connectionReadyPromise.channel().isActive());
+                    logger.trace("this connectionReadyPromise isSuccess {} and its channel isActive {}", this.connectionReadyPromise.isSuccess(), this.connectionReadyPromise.channel().isActive());
                 }
                 connectionReadyFuture = this.connectionReadyPromise;
             }
