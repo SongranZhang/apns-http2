@@ -34,6 +34,7 @@ public class ApnsHttp2 {
         try {
             this.apnsHttp2Client = new ApnsHttp2Client<>(certificateFile, password);
         } catch (IOException | KeyStoreException e) {
+            logger.error("ApnsHttp2 Init failure by IOException or KeyStoreException.", e);
             throw new SSLException(e);
         }
         this.sandboxEnvironment = false;
@@ -44,8 +45,10 @@ public class ApnsHttp2 {
             KeyStore keyStore = P12Utils.loadPCKS12KeyStore(p12InputStream, password);
             this.apnsHttp2Client = new ApnsHttp2Client<>(keyStore, password);
         } catch (SSLException e) {
+            logger.error("ApnsHttp2 Init failure by SSLException.", e);
             throw e;
         } catch (IOException | KeyStoreException e) {
+            logger.error("ApnsHttp2 Init failure by IOException or KeyStoreException.", e);
             throw new SSLException(e);
         }
         this.sandboxEnvironment = false;

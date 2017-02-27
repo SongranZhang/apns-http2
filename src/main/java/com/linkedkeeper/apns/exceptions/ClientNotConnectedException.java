@@ -5,7 +5,7 @@ package com.linkedkeeper.apns.exceptions;
  */
 public class ClientNotConnectedException extends IllegalStateException {
 
-    private static final long serialVersionUID = 1L;
+//    private static final long serialVersionUID = 1L;
 
     public ClientNotConnectedException() {
         super();

@@ -396,9 +396,9 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
     public Future<ApnsPushNotificationResponse<T>> sendNotification(final T notification) {
         final Future<ApnsPushNotificationResponse<T>> responseFuture;
 
-        verifyTopic(notification);
-
         if (this.isConnected()) {
+            verifyTopic(notification);
+
             final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
             final DefaultPromise<ApnsPushNotificationResponse<T>> responsePromise
                     = new DefaultPromise<>(connectionReadyPromise.channel().eventLoop());
