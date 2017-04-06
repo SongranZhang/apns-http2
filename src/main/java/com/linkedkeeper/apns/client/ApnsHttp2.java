@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLException;
 
@@ -54,7 +56,7 @@ public class ApnsHttp2 {
         this.sandboxEnvironment = false;
     }
 
-    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token) throws ExecutionException, CertificateNotValidException {
+    public ApnsPushNotificationResponse<ApnsPushNotification> pushMessageSync(final String payload, final String token, final int timeout) throws ExecutionException, CertificateNotValidException, TimeoutException {
         try {
             if (!this.apnsHttp2Client.isConnected()) {
                 logger.error("APNs http2 client connect is lost, stablish connection ...");
@@ -62,7 +64,7 @@ public class ApnsHttp2 {
             }
             final ApnsPushNotification apnsPushNotification = new ApnsHttp2PushNotification(token, null, payload);
             final Future<ApnsPushNotificationResponse<ApnsPushNotification>> sendNotificationFuture = this.apnsHttp2Client.sendNotification(apnsPushNotification);
-            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse = sendNotificationFuture.get();
+            final ApnsPushNotificationResponse<ApnsPushNotification> apnsPushNotificationResponse = sendNotificationFuture.get(timeout, TimeUnit.SECONDS);
 
             return apnsPushNotificationResponse;
         } catch (final ExecutionException e) {
@@ -75,7 +77,11 @@ public class ApnsHttp2 {
             }
             throw e;
         } catch (InterruptedException e) {
+            logger.error("Failed to send push(sync) notification.", e);
             throw new ExecutionException(e);
+        } catch (TimeoutException e) {
+            logger.error("Send push(sync) notification timeout.", e);
+            throw e;
         }
     }
 
