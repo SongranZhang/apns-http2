@@ -118,9 +118,10 @@ public class ApnsHttp2 {
         connectFuture.await();
     }
 
-    public void disconnect() {
+    public void disconnect() throws InterruptedException {
         if (apnsHttp2Client.isConnected()) {
-            apnsHttp2Client.disconnect();
+            final Future<Void> disconnectFuture = apnsHttp2Client.disconnect();
+            disconnectFuture.await();
         }
     }
 }
