@@ -80,7 +80,7 @@ public class ApnsHttp2 {
     }
 
     /**
-     * Partially async, as it still need connection wait if doestn have connected before
+     * Partially async, as it still need connection wait if doesn't have connected before
      *
      * @param payload
      * @param token

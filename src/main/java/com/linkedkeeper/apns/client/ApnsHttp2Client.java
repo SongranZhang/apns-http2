@@ -370,8 +370,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
 
     public boolean isConnected() {
         final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
-        return (connectionReadyPromise != null && connectionReadyPromise.isSuccess()
-                && connectionReadyPromise.channel().isActive());
+        return (connectionReadyPromise != null && connectionReadyPromise.isSuccess());
     }
 
     void waitForInitialSettings() throws InterruptedException {
@@ -396,7 +395,7 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
     public Future<ApnsPushNotificationResponse<T>> sendNotification(final T notification) {
         final Future<ApnsPushNotificationResponse<T>> responseFuture;
 
-        if (this.isConnected()) {
+        if (connectionReadyPromise != null && connectionReadyPromise.isSuccess() && connectionReadyPromise.channel().isActive()) {
             verifyTopic(notification);
 
             final ChannelPromise connectionReadyPromise = this.connectionReadyPromise;
