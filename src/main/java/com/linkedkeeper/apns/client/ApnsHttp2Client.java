@@ -306,7 +306,8 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                     connectFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {
-                            logger.info("connectFuture.channel close operationComplete, this connectionReadyPromise {}", ApnsHttp2Client.this.connectionReadyPromise);
+                            logger.info("connectFuture.channel close operationComplete, this connectionReadyPromise {}, this reconnectionPromise {}",
+                                    ApnsHttp2Client.this.connectionReadyPromise, ApnsHttp2Client.this.reconnectionPromise);
                             synchronized (ApnsHttp2Client.this.bootstrap) {
                                 if (ApnsHttp2Client.this.connectionReadyPromise != null) {
                                     ApnsHttp2Client.this.connectionReadyPromise.tryFailure(
@@ -340,7 +341,8 @@ public class ApnsHttp2Client<T extends ApnsPushNotification> {
                     this.connectionReadyPromise.addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {
-                            logger.info("connectionReadyPromise operationComplete, this connectionReadyPromise {}", ApnsHttp2Client.this.connectionReadyPromise);
+                            logger.info("connectionReadyPromise operationComplete, this connectionReadyPromise {}, this reconnectionPromise {}",
+                                    ApnsHttp2Client.this.connectionReadyPromise, ApnsHttp2Client.this.reconnectionPromise);
                             if (future.isSuccess()) {
                                 synchronized (ApnsHttp2Client.this.bootstrap) {
                                     if (ApnsHttp2Client.this.reconnectionPromise != null) {
