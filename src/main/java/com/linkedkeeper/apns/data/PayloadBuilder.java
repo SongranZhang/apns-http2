@@ -45,7 +45,7 @@ public final class PayloadBuilder {
     /**
      * Sets the notification badge to be displayed next to the
      * application icon.
-     * <p>
+     * <p/>
      * The passed value is the value that should be displayed
      * (it will be added to the previous badge number), and
      * a badge of 0 clears the badge indicator.
@@ -55,6 +55,27 @@ public final class PayloadBuilder {
      */
     public PayloadBuilder badge(final int badge) {
         aps.put("badge", badge);
+        return this;
+    }
+
+    /**
+     * Sets
+     *
+     * @return this
+     */
+    public PayloadBuilder sound() {
+        aps.put("sound", "default");
+        return this;
+    }
+
+    /**
+     * Sets
+     *
+     * @param sound
+     * @return this
+     */
+    public PayloadBuilder sound(final String sound) {
+        aps.put("sound", sound);
         return this;
     }
 

@@ -4,7 +4,7 @@
 
     <groupId>com.linkedkeeper</groupId>
     <artifactId>http2-apns</artifactId>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>apns-http2</name>
