@@ -34,6 +34,7 @@ public class TestApnsHttp2 {
                 String paylaod = Payload.newPayload()
                         .alertBody("test#1 apns-http2, i = " + i + " " + DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss"))
                         .badge(1)
+                        .sound()
                         .build();
 
                 Future<ApnsPushNotificationResponse<ApnsPushNotification>> response = client.pushMessageAsync(paylaod, splitDeviceToken(goodToken));
