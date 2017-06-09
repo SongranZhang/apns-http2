@@ -20,6 +20,7 @@ public final class PayloadBuilder {
     private final Map<String, Object> root;
     private final Map<String, Object> aps;
     private final Map<String, Object> customAlert;
+    private final Map<String, Object> fields;
 
     /**
      * Constructs a new instance of {@code PayloadBuilder}
@@ -28,6 +29,7 @@ public final class PayloadBuilder {
         this.root = new HashMap<>();
         this.aps = new HashMap<>();
         this.customAlert = new HashMap<>();
+        this.fields = new HashMap<>();
     }
 
     /**
@@ -80,6 +82,21 @@ public final class PayloadBuilder {
     }
 
     /**
+     * Sets
+     *
+     * @return this
+     */
+    public PayloadBuilder addField(final String key, final Object value) {
+        fields.put(key, value);
+        return this;
+    }
+
+    public PayloadBuilder addField(final String key, final Map<String, Object> value) {
+        fields.put(key, value);
+        return this;
+    }
+
+    /**
      * Returns the JSON String representation of the payload
      * according to Apple APNS specification
      *
@@ -89,6 +106,9 @@ public final class PayloadBuilder {
         if (!root.containsKey("mdm")) {
             insertCustomAlert();
             root.put("aps", aps);
+        }
+        if (fields.size() > 0) {
+            root.putAll(fields);
         }
         try {
             return mapper.writeValueAsString(root);
